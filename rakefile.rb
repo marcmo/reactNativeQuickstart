@@ -465,6 +465,37 @@ namespace :version do
     update_android_version(next_version)
   end
 end
+namespace :setup do
+  desc 'add typescript support'
+  task :ts do
+    ['enzyme', 'jest', 'react', 'react-native', 'react-redux'].each do |d|
+      sh "yarn add @types/#{d} -D"
+    end
+    [
+      "react-native-typescript-transformer",
+      "ts-jest",
+      "tslib",
+      "tslint",
+      "tslint-react",
+      "typescript",
+      "typescript-formatter"
+    ].each do |d|
+      sh "yarn add #{d} -D"
+    end
+    require 'json'
+    package_content = JSON.parse(File.read(PACKAGE))
+    jest = package_content["jest"]
+    jest["transform"] = {
+      "^.+\\.jsx?$" => "<rootDir>/node_modules/babel-jest",
+      "^.+\\.tsx?$" => "ts-jest"
+    }
+    jest["testRegex"] = "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$"
+    jest["moduleFileExtensions"] = ["ts", "tsx", "js", "jsx", "json"]
+    File.open(PACKAGE,"w") do |f|
+      f.write(JSON.pretty_generate(package_content))
+    end
+  end
+end
 def update_ios_version(next_version)
   require 'plist'
   plist_content = Plist.parse_xml(IOS_PLIST)
