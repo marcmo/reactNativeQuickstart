@@ -1,15 +1,13 @@
 require 'rake'
 
 PROJECT="basic"
+PACKAGE="./package.json"
 NODE_PATH="./node_modules"
 NODE_BIN_PATH="#{NODE_PATH}/.bin"
-PROTO_GEN_DIR="./App/Proto/generated"
-PROTO_MODEL="./App/Proto/model/cs_app_fit.proto"
-ANDROID_PACKAGE="com.esrlabs.csm4"
-ADB="$ANDROID_HOME/platform-tools/adb"
 REACT_NATIVE_CMD="node #{NODE_PATH}/react-native/local-cli/cli.js"
 IOS_PLIST="./ios/#{PROJECT}/Info.plist"
-PACKAGE="./package.json"
+ADB="$ANDROID_HOME/platform-tools/adb"
+ANDROID_PACKAGE="com.coldground.basic" # see AndroidManifest.xml
 GRADLE_PROPERTIES="android/gradle.properties"
 
 def localExec(cmd)
@@ -51,15 +49,17 @@ task :install do
   # workaround for https://github.com/oblador/react-native-vector-icons/issues/626
   # sh 'rm ./node_modules/react-native/local-cli/core/__fixtures__/files/package.json'
   cd 'ios' do
-    sh 'pod install'
+    if File.exists? "Podfile"
+      sh 'pod install'
+    end
   end
 end
 desc 'burn down every cached resource and reinstall (may take some time)'
 task :burn => [:cleanWatchman] do
+  sh "echo #{`yarn cache dir`}"
   sh "rm -rf #{NODE_PATH}"
-  sh "rm -fr $TMPDIR/react-native-packager-cache-*"
-  yarn_cache_dir = `yarn cache dir`
-  sh "rm -rf #{yarn_cache_dir}"
+  sh "rm -rf #{ENV['TMPDIR']}/react-native-*"
+  sh "rm -rf #{`yarn cache dir`}"
   sh "yarn install"
 end
 
@@ -73,14 +73,14 @@ namespace :android do
   end
   desc 'create bundle'
   task :bundle do
-    sh "#{REACT_NATIVE_CMD} bundle --transformer #{NODE_PATH}/react-native-typescript-transformer/index.js --platform android --entry-file index.android.js --dev false --bundle-output ./CodePush/index.android.bundle --assets-dest ./CodePush --sourcemap-output ./CodePush/sourcemap.js"
-    # sh "react-native bundle --platform android --entry-file index.android.js --dev false --bundle-output ./android/main.jsbundle --assets-dest ./android --sourcemap-output ./sourcemap.js"
+    sh "#{REACT_NATIVE_CMD} bundle --transformer #{NODE_PATH}/react-native-typescript-transformer/index.js --platform android --entry-file index.js --dev false --bundle-output ./CodePush/index.bundle --assets-dest ./CodePush --sourcemap-output ./CodePush/sourcemap.js"
+    # sh "react-native bundle --platform android --entry-file index.js --dev false --bundle-output ./android/main.jsbundle --assets-dest ./android --sourcemap-output ./sourcemap.js"
   end
 
   desc 'create tar ball from release-apk'
   task :tar do
     version = get_current_version()
-    sh "tar cfvz csm4app#{version}.tar.gz ./android/app/build/outputs/apk/app-release.apk"
+    sh "tar cfvz #{PROJECT}_#{version}.tar.gz ./android/app/build/outputs/apk/app-release.apk"
   end
 
   desc 'view keystore content'
@@ -298,35 +298,8 @@ task :fixDeep do
   tsc()
 end
 
-directory PROTO_GEN_DIR
-namespace :proto do
-  desc 'generate proto files'
-  task :gen => PROTO_GEN_DIR do
-    localExec "pbjs -t static-module -w es6 --es6 --no-create --no-verify -o #{PROTO_GEN_DIR}/csm_proto.js #{PROTO_MODEL}"
-    localExec "pbts -o #{PROTO_GEN_DIR}/csm_proto.d.ts #{PROTO_GEN_DIR}/csm_proto.js"
-    sh "echo '/* tslint:disable */' | cat - #{PROTO_GEN_DIR}/csm_proto.d.ts > tmp292328 && mv tmp292328 #{PROTO_GEN_DIR}/csm_proto.d.ts"
-    sh "echo '/* eslint:disable */' | cat - #{PROTO_GEN_DIR}/csm_proto.js > tmp292328 && mv tmp292328 #{PROTO_GEN_DIR}/csm_proto.js"
-  end
-
-  desc 'run basic python tests'
-  task :test do
-    sh "protoc -I=./App/Proto/model --python_out=./Tests/Proto/ ./App/Proto/model/*.proto"
-    sh "python3 ./Tests/Proto/test.py"
-    FileList[ "./Tests/Proto/*_pb2.py*", "./Tests/Proto/__pycache__"].each do |f|
-      rm_r f
-    end
-    localExec "ts-node ./Tests/Proto/run.ts"
-  end
-  desc 'proto tests in ruby'
-  task :ruby do
-    sh "protoc -I=./App/Proto/model --ruby_out=./Tests/Proto/ ./App/Proto/model/*.proto"
-  end
-end
-
 namespace :git do
-  task :hook do
-    sh "npm run lint -s && npm run test -s"
-  end
+  task :hook => [:lint, :test]
   desc 'show files ignored by git'
   task :ignored do
     sh "git status --ignored"
