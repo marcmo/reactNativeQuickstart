@@ -1,4 +1,5 @@
 apply plugin: "com.android.application"
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 
 import com.android.build.OutputFile
 
@@ -95,10 +96,10 @@ def enableProguardInReleaseBuilds = false
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
-        applicationId "com.basic"
+        applicationId "com.coldground.basic"
         minSdkVersion 16
         targetSdkVersion 22
         versionCode 1
