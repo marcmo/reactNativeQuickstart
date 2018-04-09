@@ -1,13 +1,13 @@
 require 'rake'
 
-PROJECT="basic"
+PROJECT="quickstart"
 PACKAGE="./package.json"
 NODE_PATH="./node_modules"
 NODE_BIN_PATH="#{NODE_PATH}/.bin"
 REACT_NATIVE_CMD="node #{NODE_PATH}/react-native/local-cli/cli.js"
 IOS_PLIST="./ios/#{PROJECT}/Info.plist"
 ADB="$ANDROID_HOME/platform-tools/adb"
-ANDROID_PACKAGE="com.coldground.basic" # see AndroidManifest.xml
+ANDROID_PACKAGE="com.coldground.quickstart" # see AndroidManifest.xml
 GRADLE_PROPERTIES="android/gradle.properties"
 
 def localExec(cmd)

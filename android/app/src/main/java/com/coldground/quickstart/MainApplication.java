@@ -1,4 +1,4 @@
-package com.coldground.basic;
+package com.coldground.quickstart;
 
 import android.app.Application;
 
