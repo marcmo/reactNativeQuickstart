@@ -1,98 +1,50 @@
 import * as React from 'react';
-import { View, Platform, ScrollView, StatusBar, Text, StyleSheet, Button } from 'react-native';
-import { StackNavigator, DrawerNavigator, SafeAreaView } from 'react-navigation';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import * as Redux from 'redux';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/lib/integration/react';
+import { View, ActivityIndicator, Platform, ScrollView, StatusBar, Text, StyleSheet, Button } from 'react-native';
+import { StackNavigator, DrawerNavigator, SwitchNavigator, SafeAreaView } from 'react-navigation';
 
-const MyButton = (props) => (
-  <View style={styles.margin} >
-    <Button {...props} />
-  </View>
-);
+import * as T from './Types';
+import { myStore, myPersistor } from './Redux';
+import { log } from './Lib/Logging';
+import Loading from './Navigation/Loading';
+import Nav from './Navigation';
 
-const styles = StyleSheet.create({
-  margin: {
-    ...Platform.select({
-      android: {
-        margin: 10,
-      },
-    }),
-  },
-});
+const LOG = log('app');
 
-const MyNavScreen = ({ navigation, banner }) => (
-  <ScrollView>
-    <SafeAreaView forceInset={{ top: 'always' }}>
-      <Text>{banner} </Text>
-      <MyButton
-        onPress={() => navigation.navigate('DrawerOpen')}
-        title="Open drawer"
-      />
-      <MyButton
-        onPress={() => navigation.navigate('Email')}
-        title="Open other screen"
-      />
-      <MyButton onPress={() => navigation.goBack(null)} title="Go back" />
-    </SafeAreaView>
-    < StatusBar barStyle="default" />
-  </ScrollView>
-);
-interface F { (x: any): any; navigationOptions?: any; }
-const InboxScreen: F = ({ navigation }) => (
-  <MyNavScreen banner={'Inbox Screen'} navigation={navigation} />
-);
-InboxScreen.navigationOptions = {
-  drawerLabel: 'Inbox',
-  drawerIcon: ({ tintColor }) => (
-    <MaterialIcons
-      name="move-to-inbox"
-      size={24}
-      style={{ color: tintColor }}
-    />
-  ),
-};
+interface SelectorProps {
+  getAppState: () => T.RootState;
+}
+class ScreenSelector extends React.Component<SelectorProps, any> {
+  componentWillReceiveProps(nextProps: SelectorProps) {
+    LOG.d('ScreenSelector: componentWillReceiveProps', nextProps);
+  }
+  render() {
+    const appState = this.props.getAppState().nav;
+    LOG.d('ScreenSelector: render', appState);
+    const Comp = Nav(appState.root);
+    return <Comp />;
+  }
+}
+class App extends React.Component {
 
-const EmailScreen = ({ navigation }) => (
-  <MyNavScreen banner={'Email Screen'} navigation={navigation} />
-);
+  componentDidMount() {
+    LOG.d('componentDidMount');
+  }
+  componentWillReceiveProps() {
+    LOG.d('componentWillReceiveProps');
+  }
+  render() {
+    LOG.d('in App.render, state:', myStore.getState());
+    return (
+      <Provider store={myStore}>
+        <PersistGate loading={<Loading />} persistor={myPersistor}>
+          <ScreenSelector getAppState={myStore.getState}/>
+        </PersistGate>
+      </Provider>
+    );
+  }
+}
 
-const DraftsScreen: F = ({ navigation }) => (
-  <MyNavScreen banner={'Drafts Screen'} navigation={navigation} />
-);
-DraftsScreen.navigationOptions = {
-  drawerLabel: 'Drafts',
-  drawerIcon: ({ tintColor }) => (
-    <MaterialIcons name="drafts" size={24} style={{ color: tintColor }} />
-  ),
-};
-
-const InboxStack = StackNavigator({
-  Inbox: { screen: InboxScreen },
-  Email: { screen: EmailScreen },
-});
-const DraftsStack = StackNavigator({
-  Drafts: { screen: DraftsScreen },
-  Email: { screen: EmailScreen },
-});
-const DrawerExample = DrawerNavigator(
-  {
-    Inbox: {
-      path: '/',
-      screen: InboxStack,
-    },
-    Drafts: {
-      path: '/sent',
-      screen: DraftsStack,
-    },
-  },
-  {
-    drawerOpenRoute: 'DrawerOpen',
-    drawerCloseRoute: 'DrawerClose',
-    drawerToggleRoute: 'DrawerToggle',
-    initialRouteName: 'Drafts',
-    contentOptions: {
-      activeTintColor: '#e91e63',
-    },
-  },
-);
-
-export default DrawerExample;
+export default App;

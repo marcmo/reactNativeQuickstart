@@ -2,6 +2,7 @@ require 'rake'
 
 PROJECT="quickstart"
 PACKAGE="./package.json"
+SRC_DIR="./src"
 NODE_PATH="./node_modules"
 NODE_BIN_PATH="#{NODE_PATH}/.bin"
 REACT_NATIVE_CMD="node #{NODE_PATH}/react-native/local-cli/cli.js"
@@ -256,14 +257,14 @@ end
 
 def lint(args)
   begin
-    localExec "tslint -c tslint.json 'App/**/*.{ts,tsx}' --exclude 'App/Proto/generated/*.*' -t stylish #{args}"
+    localExec "tslint -c tslint.json '#{SRC_DIR}/**/*.{ts,tsx}' --exclude '#{SRC_DIR}/Proto/generated/*.*' -t stylish #{args}"
   rescue Exception => ex
     puts "tslint: #{ex.message}"
   end
 end
 def lintDeep(args)
   begin
-    localExec "tslint --project tsconfig.json --config tslint.json 'App/**/*.{ts,tsx}' --exclude 'App/Proto/generated/*.*' -t stylish #{args}"
+    localExec "tslint --project tsconfig.json --config tslint.json '#{SRC_DIR}/**/*.{ts,tsx}' --exclude '#{SRC_DIR}/Proto/generated/*.*' -t stylish #{args}"
   rescue Exception => ex
     puts "tslint: #{ex.message}"
   end
@@ -358,9 +359,9 @@ end
 
 desc 'build icon pngs from svgs'
 task :icons do
-  svgs = FileList.new("./App/Assets/svgs/large/*.svg")
+  svgs = FileList.new("./#{SRC_DIR}/Assets/svgs/large/*.svg")
   puts svgs
-  small_svgs = FileList.new("./App/Assets/svgs/*.svg")
+  small_svgs = FileList.new("./#{SRC_DIR}/Assets/svgs/*.svg")
   puts small_svgs
   svgs.each do |svg|
     convert_svg(svg, 60, 60)
